@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="su">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>Ulangan Harian Basa Sunda XII - Carita Buhun</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Literata',Georgia,serif;background:#e8efec;color:#1d2b29}
+.card{background:#fff;border:1px solid #c5d3cf;border-left:6px solid #2b3a67;border-radius:6px}
+.opt{display:block;width:100%;text-align:left;padding:.5rem .75rem;border:1px solid #c5d3cf;border-radius:4px;margin-top:.35rem;cursor:pointer;transition:background .15s}
+.opt:hover{background:#eef3f1}
+.opt.sel{background:#2b3a67;color:#fff;border-color:#2b3a67}
+.opt.ok{background:#d7efdc;border-color:#2f8a47}
+.opt.no{background:#f7d9d5;border-color:#b3392b}
+.mi{padding:.45rem .65rem;border:1px solid #c5d3cf;border-radius:4px;cursor:pointer;font-size:.9rem;margin-bottom:.35rem;background:#fff;display:flex;gap:.5rem}
+.mi:hover{background:#eef3f1}
+.mi.act{outline:3px solid #b8892b}
+.mi b{min-width:1.6rem;display:inline-block}
+body.exam{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.exam input{-webkit-user-select:text;user-select:text}
+button:focus-visible,.opt:focus-visible,.mi:focus-visible,input:focus-visible{outline:3px solid #b8892b;outline-offset:2px}
+
+/* ===== Anti screenshot ===== */
+#shield{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:#111;color:#fff;text-align:center;padding:1.5rem;font-size:1.1rem}
+body.shielded #shield{display:flex}
+body.shielded main,body.shielded header,body.shielded footer{visibility:hidden}
+#wm{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden;display:none}
+body.exam #wm{display:block}
+#wm span{position:absolute;white-space:nowrap;font-size:14px;font-weight:700;color:rgba(43,58,103,.18);transform:rotate(-25deg)}
+/* Perlindungan visual tambahan saat jendela kehilangan fokus. */
+body.exam:not(:focus-within) #wm{opacity:.75}
+@media (prefers-reduced-motion:no-preference){#shield{transition:opacity .05s linear}}
+@media print{body *{display:none!important}body::after{content:"Pencetakan teu diidinan.";display:block;font-size:20px;padding:2rem}}
+
+/* iPhone/Safari optimization */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior:none}
+body{min-height:100dvh;min-height:-webkit-fill-available;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-tap-highlight-color:transparent}
+header{padding-top:max(2rem,env(safe-area-inset-top))}
+button,.opt,.mi,input{min-height:44px;touch-action:manipulation}
+input{font-size:16px!important}
+button{-webkit-appearance:none;appearance:none}
+.opt{padding:.75rem .85rem;line-height:1.35}.mi{padding:.7rem .75rem;line-height:1.35}
+#shield{padding:max(1.5rem,env(safe-area-inset-top)) max(1.25rem,env(safe-area-inset-right)) max(1.5rem,env(safe-area-inset-bottom)) max(1.25rem,env(safe-area-inset-left))}
+@media(max-width:640px){header h1{font-size:1.65rem;line-height:1.15}header p{font-size:.95rem}.card{border-left-width:4px}#btnStart,#btnHitung,#btnPdf,#btnBack{width:100%;min-height:48px}}
+</style>
+</head>
+<body class="min-h-screen">
+<div id="shield">Konten disumputkeun. Balik deui ka jandela ulangan.</div>
+<div id="wm"></div>
+<header class="bg-[#2b3a67] text-white py-8 px-4">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-extrabold">Ulangan Harian Basa Sunda</h1>
+    <p class="mt-1 text-lg">Kelas XII SMA &middot; Materi Carita Buhun Sunda</p>
+    <p class="mt-3 text-sm opacity-90">25 soal pilihan ganda A–E (50 poin) dan 25 soal menjodohkan (50 poin). KKM 79.</p>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6 space-y-8">
+  <section class="card p-5">
+    <h2 class="text-xl font-semibold mb-3">1. Identitas Siswa</h2>
+    <div class="grid md:grid-cols-3 gap-3">
+      <label class="block text-sm">Ngaran lengkep<input id="nama" class="mt-1 w-full border rounded px-3 py-2" placeholder="Contoh: Asep Sunandar"></label>
+      <label class="block text-sm">Kelas<input id="kelas" class="mt-1 w-full border rounded px-3 py-2" value="XII"></label>
+      <label class="block text-sm">Nomer absén<input id="absen" class="mt-1 w-full border rounded px-3 py-2" placeholder="Contoh: 12"></label>
+    </div>
+  </section>
+
+  <section id="gate" class="card p-5">
+    <h2 class="text-xl font-semibold mb-2">Aturan Mode Ulangan</h2>
+    <ul class="list-disc ml-5 text-sm space-y-1">
+      <li>Ulangan dibuka dina layar pinuh (<i>fullscreen</i>). Ulah kaluar ti layar pinuh.</li>
+      <li>Ulah ngabuka tab, aplikasi, atawa jandela séjén salila ngerjakeun.</li>
+      <li>Salin, témpél, klik katuhu, jeung potong kompas (Ctrl+C/V/U/S/P, F12) dipareuman.</li>
+      <li>Lamun jandela/tab kaleungitan fokus, eusi soal langsung disumputkeun. Watermark ngaran jeung waktos ogé aktip salila ulangan.</li>
+      <li>Unggal ninggalkeun halaman dicatet minangka <b>pelanggaran</b>. Sanggeus <b><span id="maxV"></span> kali</b>, ulangan otomatis dikumpulkeun jeung sertifikat teu dikaluarkeun.</li>
+    </ul>
+    <button id="btnStart" class="mt-4 bg-[#2b3a67] hover:bg-[#1f2b4d] text-white font-semibold px-6 py-3 rounded">Mimitian ulangan (layar pinuh)</button>
+    <p id="gateWarn" class="text-red-700 text-sm mt-2"></p>
+  </section>
+
+  <div id="examBody" class="hidden space-y-8">
+  <div class="sticky top-0 z-30 bg-[#2b3a67] text-white text-sm rounded px-4 py-2 flex justify-between shadow"><span>Mode ulangan aktif</span><span>Pelanggaran: <b id="vCount">0</b>/<span id="maxV2"></span></span></div>
+  <section>
+    <h2 class="text-xl font-semibold mb-1">2. Pilihan Ganda <span class="text-sm font-normal">(<span id="cntMC">0</span>/25 kajawab)</span></h2>
+    <p class="text-sm mb-3">Pilih hiji jawaban nu paling bener. Unggal soal 2 poin.</p>
+    <div id="mc" class="space-y-4"></div>
+  </section>
+
+  <section>
+    <h2 class="text-xl font-semibold mb-1">3. Menjodohkan <span class="text-sm font-normal">(<span id="cntMT">0</span>/25 dijodokeun)</span></h2>
+    <p class="text-sm mb-3">Klik istilah di Kolom A, tuluy klik pasangan na di Kolom B. Klik deui nu geus dijodokeun pikeun ngabolaykeun. Unggal pasangan 2 poin.</p>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div><h3 class="font-semibold mb-2">Kolom A</h3><div id="colA"></div></div>
+      <div><h3 class="font-semibold mb-2">Kolom B</h3><div id="colB"></div></div>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <h2 class="text-xl font-semibold mb-3">4. Itung Nilai</h2>
+    <button id="btnHitung" class="bg-[#2b3a67] hover:bg-[#1f2b4d] text-white font-semibold px-6 py-3 rounded">Itung nilai otomatis</button>
+    
+    <p id="warn" class="text-red-700 text-sm mt-3"></p>
+    <div id="hasil" class="hidden mt-5">
+      <div class="grid sm:grid-cols-3 gap-3 text-center">
+        <div class="border rounded p-3"><div class="text-sm">Pilihan ganda</div><div id="sMC" class="text-2xl font-bold"></div></div>
+        <div class="border rounded p-3"><div class="text-sm">Menjodohkan</div><div id="sMT" class="text-2xl font-bold"></div></div>
+        <div class="border rounded p-3 bg-[#2b3a67] text-white"><div class="text-sm">Total nilai</div><div id="sTot" class="text-3xl font-extrabold"></div></div>
+      </div>
+      <p id="status" class="mt-4 font-semibold text-lg"></p>
+    </div>
+  </section>
+
+  <section id="sertWrap">
+    <h2 class="text-xl font-semibold mb-1">5. Sertifikat Kalulusan</h2>
+    <p id="sertNote" class="text-sm mb-3"></p>
+    <div id="sertPrev" class="relative bg-white p-2 border-4 border-double border-[#b8892b] text-center" style="aspect-ratio:297/210;max-width:820px;margin:auto">
+      <div class="h-full flex flex-col items-center justify-center px-4 border border-[#2b3a67]">
+        <div class="text-[#b8892b] text-xs sm:text-sm">Ulangan Harian Basa Sunda Kelas XII</div>
+        <div class="text-2xl sm:text-5xl font-extrabold text-[#2b3a67] mt-1">SERTIFIKAT KALULUSAN</div>
+        <div class="text-xs sm:text-base mt-3">Dipasihkeun ka</div>
+        <div id="pNama" class="text-xl sm:text-4xl font-semibold italic border-b-2 border-[#b8892b] px-6 mt-1"></div>
+        <div id="pInfo" class="text-xs sm:text-base mt-1"></div>
+        <div class="text-xs sm:text-base mt-3 max-w-xl">nu geus lulus ulangan harian materi <b>Carita Buhun Sunda</b> (pantun, wawacan, jeung carita wayang) kalayan nilai</div>
+        <div id="pNilai" class="text-3xl sm:text-6xl font-extrabold text-[#2b3a67]"></div>
+        <div id="pTgl" class="text-xs sm:text-sm mt-2"></div>
+      </div>
+      <div id="sertLock" class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="text-4xl sm:text-7xl font-extrabold tracking-widest text-[#2b3a67] opacity-20 -rotate-12">CONTOH</span></div>
+    </div>
+    <div class="text-center mt-4"><button id="btnPdf" class="bg-[#b8892b] hover:bg-[#9a7120] text-white font-semibold px-6 py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed">Unduh sertifikat PDF</button></div>
+  </section>
+  </div>
+</main>
+<footer class="text-center text-xs py-6">Sumber materi: Panggelar Basa Sunda pikeun SMA/MA/SMK/MAK Kelas XII, Pangajaran 1.</footer>
+
+<div id="warnOv" class="hidden fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
+  <div class="bg-white rounded p-6 max-w-md text-center border-t-8 border-red-700">
+    <h2 class="text-2xl font-extrabold text-red-700">Pelanggaran!</h2>
+    <p id="warnMsg" class="mt-2"></p>
+    <p id="warnCnt" class="mt-2 font-semibold"></p>
+    <button id="btnBack" class="mt-4 bg-[#2b3a67] text-white font-semibold px-6 py-3 rounded">Balik ka ulangan</button>
+  </div>
+</div>
+<script>
+const KKM=79;
+// [soal, [pilihan], indéks jawaban bener]
+const MC=[
+["Wanda carita buhun Sunda anu dipedar dina buku ieu nyaéta...",["Dongéng, mantra, jeung kakawihan","Carita babad, sisindiran, jeung kawih","Carita pantun, wawacan, jeung carita wayang","Guguritan, pupuh, jeung sajak","Rumpaka, kakawihan, jeung paparikan"],2],
+["Carita pantun dina sastra Sunda nyaéta carita rékaan anu ukuranana...",["Pondok jeung ditulis","Pondok jeung dikawihkeun","Panjang jeung ngan ditulis dina lontar","Pondok jeung dipidangkeun ku loba jelema","Panjang jeung gelarna sacara lisan"],4],
+["Carita pantun biasana ditepikeun ku...",["Dalang","Juru pantun (nu mantun)","Sinden","Juru kawih","Juru dongéng"],1],
+["Waditra anu ngiringan juru pantun nalika mantun nyaéta...",["Kacapi","Kendang","Rebab","Suling","Saron"],0],
+["Dina naskah Sunda kuno Sanghyang Siksa Kandang Karesian (1518 M), carita pantun geus...",["Dipaparin","Dipiceun","Henteu dipikawanoh","Disabit-sabit","Dihapus"],3],
+["Unsur anu ngawangun struktur carita pantun nyaéta...",["Téma, amanat, jeung latar","Rajah, narasi, dialog, jeung monolog","Kakawén, murwa, jeung nyandra","Guru gatra, guru wilangan, jeung guru lagu","Pupuh, sasmita, jeung wirahma"],1],
+["Rajah dina carita pantun nyaéta...",["Ciri mangkat carita nu eusina sanduk-sanduk ka Nu Kawasa","Bagéan nu ngagambarkeun kajadian","Guneman antara dua tokoh","Panutup carita","Guneman hiji tokoh ka dirina sorangan"],0],
+["Nu kaasup judul carita pantun Sunda nyaéta...",["Panji Wulung","Sanghyang Siksa","Ciung Wanara","Rama jeung Sinta","Mahabarata"],2],
+["Guneman hiji tokoh ka dirina sorangan, nu sok dihaleuangkeun, disebut...",["Dialog","Narasi","Rajah","Murwa","Monolog"],4],
+["Bagéan carita pantun anu ngagambarkeun kaayaan atawa kajadian disebut...",["Narasi","Monolog","Rajah","Dialog","Murwa"],0],
+["Dialog nyaéta...",["Guneman hiji tokoh ka dirina sorangan","Bubuka carita","Guneman antara hiji tokoh jeung tokoh séjénna","Eusi sanduk-sanduk","Déskripsi kajadian"],2],
+["Wawacan mangrupa carita panjang anu dianggit maké patokan...",["Pupuh","Rajah","Kakawén","Sisindiran","Murwa"],0],
+["Jumlah pupuh anu dipaké dina wawacan kabéhna aya...",["13","15","19","17","21"],3],
+["Anu kaasup 4 sekar ageung (KSAD) nyaéta...",["Kinanti, Pucung, Sinom, Durma","Pucung, Mijil, Maskumambang, Durma","Kinanti, Sinom, Asmarandana, Dangdanggula","Magatru, Wirangrong, Lambang, Gurisa","Mijil, Pucung, Balakbak, Ladrang"],2],
+["Kekecapan anu dipaké pikeun nandakeun gantina pupuh disebut...",["Guru lagu","Wirahma","Murwa","Sasmita pupuh","Guru wilangan"],3],
+["Guru gatra dina patokan pupuh nyaéta...",["Jumlah engang dina unggal padalisan","Vokal engang tungtung padalisan","Eureun sora dina pedotan","Jumlah baris dina unggal pada","Kapaduan harti dina padalisan"],3],
+["Katangtuan ngeunaan jumlah engang dina unggal padalisan disebut...",["Guru wilangan","Guru gatra","Guru lagu","Adegan","Wirahma"],0],
+["Katangtuan pikeun nangtukeun vokal engang tungtung dina unggal padalisan disebut...",["Guru wilangan","Guru lagu","Wirahma","Guru gatra","Adegan"],1],
+["Struktur carita dina wawacan nyaéta...",["Rajah, narasi, jeung dialog","Murwa, nyandra, jeung antawacana","Kakawén, suluk, jeung janturan","Guru gatra, guru wilangan, jeung guru lagu","Téma, palaku, latar, galur carita, puseur sawangan, jeung amanat"],4],
+["Wawacan asalna ti sastra Jawa anu asup ka urang Sunda dina jaman...",["Karajaan Pajajaran","Karajaan Mataram","Karajaan Sunda Galuh","Karajaan Majapahit","Karajaan Kawali"],1],
+["Kecap wayang asalna tina kecap bayang anu hartina...",["Bonéka","Gambar","Kalangkang","Kelir","Balincong"],2],
+["Mahabarata nyaritakeun lalakon terah Barata, sedengkeun Ramayana nyaritakeun...",["Prabu Rahwana","Pandawa","Gatotkaca","Batara Rama","Kurawa"],3],
+["Dina lalakon Mahabarata, nu nyekel kaadilan nyaéta Pandawa, sedengkeun nu murka nyaéta...",["Dasamuka","Kurawa","Rahwana","Arjuna","Kresna"],1],
+["Mahabarata dianggit ku Wiyasa dina wangun puisi nu panjangna...",["10.000 sloka","100.000 sloka","50.000 sloka","1.000 sloka","200.000 sloka"],1],
+["Santikaning dalang diwangun ku dua kecap, santika nu hartina...",["Élmu kasatriaan","Élmu kaagamaan","Élmu padalangan","Élmu kasenian","Élmu karaton"],0]
+];
+// [istilah (A), pasangan (B)]
+const MT=[
+["Juru pantun","Jalma nu nepikeun carita pantun bari dipirig kacapi"],
+["Rajah","Bagéan ciri mangkat carita pantun, eusina sanduk-sanduk ka Nu Kawasa"],
+["Narasi","Bagéan carita nu ngagambarkeun kaayaan atawa kajadian"],
+["Dialog","Guneman antara hiji tokoh jeung tokoh séjénna"],
+["Monolog","Guneman hiji tokoh ka dirina sorangan"],
+["Ciung Wanara","Judul carita pantun Sunda"],
+["Wawacan","Carita panjang anu dianggit maké patokan pupuh"],
+["Pupuh","Wangun puisi tradisional anu kaiket ku patokan"],
+["Guru gatra","Katangtuan jumlah baris dina unggal pada"],
+["Guru wilangan","Katangtuan jumlah engang dina unggal padalisan"],
+["Guru lagu","Katangtuan vokal engang tungtung dina unggal padalisan"],
+["Sasmita pupuh","Kekecapan panandaan gantina pupuh"],
+["Wirahma","Eureun sora atawa jeda anu diwatesan ku pedotan (caesura)"],
+["Wayang purwa","Wayang kulit nu lalakonna Mahabarata jeung Ramayana"],
+["Wayang gedog","Wayang kulit nu ngalalakonkeun carita Panji"],
+["Wayang golék","Wayang tina kai kawas bonéka, réa sumebar di Jawa Barat"],
+["Wayang klitik","Wayang golék laleutik tina kayu gépéng, dipintonkeun teu maké kelir"],
+["Wayang wong","Wayang jelema anu lalakonna tina Mahabarata"],
+["Wayang suluh","Wayang kulit pikeun penyuluhan, nyaritakeun sajarah Indonesia"],
+["Wayang titi","Wayang anu nyaritakeun lalakon ti nagri Tiongkok"],
+["Kakawén","Suluk padalangan, puisi basa Kawi nu dikawihkeun ku dalang"],
+["Murwa","Suluk bubuka dina wiwitan caritaan wayang"],
+["Nyandra","Déskripsi adegan maké basa prosa pakeliran wayang"],
+["Antawacana","Caturan wayang dina adegan"],
+["Pandawa","Turunan Pandu Déwanata, jumlahna lima"]
+];
+
+const $=id=>document.getElementById(id);
+function setCert(unlocked){
+  $('sertLock').style.display=unlocked?'none':'flex';
+  $('btnPdf').disabled=!unlocked;
+  $('sertNote').textContent=unlocked?'Sertifikat siap diunduh dalam format PDF.':`Pratinjau contoh. Sertifikat asli bisa diunduh sesudah nilai ≥ KKM ${KKM}.`;
+}
+const ans=Array(25).fill(null);          // jawaban PG
+const pair=Array(25).fill(-1);           // pair[a]=indéks b (dina MT asli)
+let actA=-1, scored=false, scoreTotal=0;
+// Urutan Kolom B diacak tapi tetap (deterministik) ku sakali acak per muatan
+const order=[...Array(25).keys()].sort(()=>Math.random()-.5);
+const hue=i=>`hsl(${(i*47)%360},65%,85%)`;
+
+function renderMC(){
+  $('mc').innerHTML=MC.map((q,i)=>`<div class="card p-4"><p class="font-semibold">${i+1}. ${q[0]}</p>`+
+    q[1].map((o,j)=>`<button class="opt ${ans[i]===j?'sel':''}" data-q="${i}" data-o="${j}">${'ABCDE'[j]}. ${o}</button>`).join('')+`</div>`).join('');
+  $('cntMC').textContent=ans.filter(a=>a!==null).length;
+}
+$('mc').addEventListener('click',e=>{
+  const b=e.target.closest('.opt'); if(!b||scored) return;
+  ans[+b.dataset.q]=+b.dataset.o; renderMC();
+});
+
+function renderMT(){
+  $('colA').innerHTML=MT.map((m,i)=>`<div class="mi ${actA===i?'act':''}" tabindex="0" data-a="${i}" style="${pair[i]>=0?'background:'+hue(i):''}"><b>${i+1}.</b><span>${m[0]}</span></div>`).join('');
+  $('colB').innerHTML=order.map((bi,k)=>{
+    const a=pair.indexOf(bi);
+    return `<div class="mi" tabindex="0" data-b="${bi}" style="${a>=0?'background:'+hue(a):''}"><b>${'abcdefghijklmnopqrstuvwxy'[k].toUpperCase()}.</b><span>${MT[bi][1]}${a>=0?` <em class="text-xs">(← ${a+1})</em>`:''}</span></div>`;
+  }).join('');
+  $('cntMT').textContent=pair.filter(p=>p>=0).length;
+}
+function clickA(a){ if(scored) return; if(pair[a]>=0){pair[a]=-1;actA=-1;} else actA=(actA===a?-1:a); renderMT(); }
+function clickB(b){ if(scored) return;
+  const owner=pair.indexOf(b);
+  if(owner>=0){pair[owner]=-1; renderMT(); return;}
+  if(actA<0) return;
+  pair[actA]=b; actA=-1; renderMT();
+}
+$('colA').addEventListener('click',e=>{const d=e.target.closest('[data-a]'); if(d) clickA(+d.dataset.a);});
+$('colB').addEventListener('click',e=>{const d=e.target.closest('[data-b]'); if(d) clickB(+d.dataset.b);});
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ const d=e.target; if(d.classList&&d.classList.contains('mi')){e.preventDefault();d.click();} } });
+
+function hitung(force){
+  if(scored) return;
+  const nama=$('nama').value.trim();
+  if(!nama&&!force){ $('warn').textContent='Eusian heula ngaran lengkep di bagéan Identitas Siswa.'; $('nama').focus(); return; }
+  const kosongMC=ans.filter(a=>a===null).length, kosongMT=pair.filter(p=>p<0).length;
+  if(!force&&(kosongMC||kosongMT)){ ignoreV=true; const ok=confirm(`Masih aya ${kosongMC} soal pilihan ganda jeung ${kosongMT} soal menjodohkan nu can dijawab. Tetep itung nilai?`); setTimeout(()=>ignoreV=false,800); if(!ok) return; }
+  $('warn').textContent='';
+  let mc=0, mt=0;
+  ans.forEach((a,i)=>{ if(a===MC[i][2]) mc++; });
+  pair.forEach((p,i)=>{ if(p===i) mt++; });
+  scored=true; scoreTotal=(mc+mt)*2;
+  $('sMC').textContent=`${mc*2} / 50`; $('sMT').textContent=`${mt*2} / 50`; $('sTot').textContent=scoreTotal;
+  $('hasil').classList.remove('hidden');
+  // tandaan jawaban
+  document.querySelectorAll('#mc .opt').forEach(b=>{
+    const q=+b.dataset.q,o=+b.dataset.o;
+    if(o===MC[q][2]) b.classList.add('ok'); else if(ans[q]===o) b.classList.add('no');
+  });
+  $('colA').querySelectorAll('.mi').forEach((d,i)=>{ d.style.background=pair[i]===i?'#d7efdc':(pair[i]>=0?'#f7d9d5':'#fff'); if(pair[i]!==i) d.insertAdjacentHTML('beforeend',`<em class="text-xs ml-auto">Bener: ${MT[i][1]}</em>`); });
+  endExam();
+  const lulus=scoreTotal>=KKM&&!terminated;
+  $('status').innerHTML=terminated?`<span class="text-red-700">Ulangan dikumpulkeun otomatis kusabab ${viol} kali ninggalkeun halaman. Sertifikat teu dikaluarkeun.</span>`:lulus?`<span class="text-green-700">Wilujeng, ${nama}! Anjeun LULUS (nilai ${scoreTotal} ≥ KKM ${KKM}).</span>`
+    :`<span class="text-red-700">Nilai ${scoreTotal} can ngahontal KKM ${KKM}. Pelajari deui materina tuluy coba deui.</span>`;
+  if(lulus){
+    const tgl=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+    $('pNama').textContent=nama;
+    $('pInfo').textContent=`Kelas ${$('kelas').value||'-'}${$('absen').value?' · Absén '+$('absen').value:''}`;
+    $('pNilai').textContent=scoreTotal; $('pTgl').textContent=tgl;
+    setCert(true);
+    $('sertWrap').scrollIntoView({behavior:'smooth'});
+  } else setCert(false);
+  if(terminated) $('sertNote').textContent='Sertifikat teu dikaluarkeun kusabab ulangan dihentikan ku pelanggaran.';
+  if(viol>0) $('status').insertAdjacentHTML('afterend',`<p class="text-sm mt-2">Catetan pelanggaran (${viol}): ${vLog.join('; ')}</p>`);
+  if(!lulus) $('hasil').scrollIntoView({behavior:'smooth'});
+}
+$('btnHitung').onclick=()=>hitung(false);
+
+
+$('btnPdf').onclick=()=>{
+  const {jsPDF}=window.jspdf; const d=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=297,H=210,C=W/2,nama=$('nama').value.trim();
+  d.setDrawColor(184,137,43); d.setLineWidth(2); d.rect(8,8,W-16,H-16);
+  d.setDrawColor(43,58,103); d.setLineWidth(.6); d.rect(13,13,W-26,H-26);
+  d.setFont('times','normal'); d.setTextColor(184,137,43); d.setFontSize(14);
+  d.text('Ulangan Harian Basa Sunda Kelas XII',C,34,{align:'center'});
+  d.setFont('times','bold'); d.setTextColor(43,58,103); d.setFontSize(40);
+  d.text('SERTIFIKAT KALULUSAN',C,56,{align:'center'});
+  d.setFont('times','normal'); d.setTextColor(29,43,41); d.setFontSize(14);
+  d.text('Dipasihkeun ka',C,76,{align:'center'});
+  d.setFont('times','bolditalic'); d.setFontSize(32); d.text(nama,C,94,{align:'center'});
+  const w=Math.min(d.getTextWidth(nama)+20,W-60);
+  d.setDrawColor(184,137,43); d.setLineWidth(.8); d.line(C-w/2,98,C+w/2,98);
+  d.setFont('times','normal'); d.setFontSize(13);
+  d.text(`Kelas ${$('kelas').value||'-'}${$('absen').value?'  |  Absén '+$('absen').value:''}`,C,107,{align:'center'});
+  d.setFontSize(14);
+  d.text('nu geus lulus ulangan harian materi Carita Buhun Sunda',C,122,{align:'center'});
+  d.text('(carita pantun, wawacan, jeung carita wayang) kalayan nilai',C,130,{align:'center'});
+  d.setFont('times','bold'); d.setFontSize(48); d.setTextColor(43,58,103);
+  d.text(String(scoreTotal),C,154,{align:'center'});
+  d.setFont('times','normal'); d.setFontSize(12); d.setTextColor(29,43,41);
+  d.text(`KKM ${KKM}  |  ${$('pTgl').textContent}`,C,166,{align:'center'});
+  d.setFontSize(10); d.text('Sertifikat ieu dijieun otomatis ku aplikasi Ulangan Harian Basa Sunda.',C,184,{align:'center'});
+  d.save(`Sertifikat-${nama.replace(/\s+/g,'_')}.pdf`);
+};
+
+
+// ===== Mode Ulangan (anti ngabuka aplikasi séjén) =====
+const MAXV=3;
+let started=false, viol=0, vLog=[], terminated=false, ignoreV=false, fsOK=false, lastV=0;
+$('maxV').textContent=MAXV; $('maxV2').textContent=MAXV;
+const reqFS=()=>{ const el=document.documentElement; if(!el.requestFullscreen) return Promise.reject(); return el.requestFullscreen(); };
+
+$('btnStart').onclick=()=>{
+  const nama=$('nama').value.trim();
+  if(!nama){ $('gateWarn').textContent='Eusian heula ngaran lengkep.'; $('nama').focus(); return; }
+  ['nama','kelas','absen'].forEach(i=>$(i).disabled=true);
+  const go=()=>{ started=true; document.body.classList.add('exam'); $('gate').classList.add('hidden'); $('examBody').classList.remove('hidden'); window.scrollTo(0,0); };
+  reqFS().then(()=>{fsOK=true;go();}).catch(()=>{fsOK=false;go();
+    alert('Browser ieu teu ngidinan layar pinuh. Ulangan tetep jalan, tapi ninggalkeun tab/aplikasi tetep dicatet.');});
+};
+
+function showWarn(reason){
+  $('warnMsg').textContent=reason+'. Aplikasi atawa tab séjén teu meunang dibuka salila ulangan.';
+  $('warnCnt').textContent=`Pelanggaran ${viol} ti ${MAXV}. Upami ${MAXV} kali, ulangan otomatis dikumpulkeun.`;
+  $('warnOv').classList.remove('hidden');
+}
+$('btnBack').onclick=()=>{ $('warnOv').classList.add('hidden'); if(!document.fullscreenElement) reqFS().then(()=>fsOK=true).catch(()=>{}); };
+
+function violation(reason){
+  if(!started||scored||ignoreV) return;
+  const now=Date.now(); if(now-lastV<1500) return; lastV=now;
+  viol++; vLog.push(new Date().toLocaleTimeString('id-ID')+' '+reason);
+  $('vCount').textContent=viol;
+  if(viol>=MAXV){ terminated=true; $('warnOv').classList.add('hidden'); hitung(true); return; }
+  showWarn(reason);
+}
+function endExam(){
+  started=false; document.body.classList.remove('exam'); $('warnOv').classList.add('hidden');
+  if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) violation('Ninggalkeun tab/aplikasi'); });
+window.addEventListener('blur',()=>violation('Ninggalkeun jandela ulangan'));
+document.addEventListener('fullscreenchange',()=>{ if(fsOK&&!document.fullscreenElement) violation('Kaluar ti layar pinuh'); });
+window.addEventListener('beforeunload',e=>{ if(started&&!scored){ e.preventDefault(); e.returnValue=''; } });
+['contextmenu','copy','cut','paste','dragstart','selectstart'].forEach(ev=>document.addEventListener(ev,e=>{
+  if(!started||scored) return;
+  if(ev==='selectstart'&&e.target.closest&&e.target.closest('input')) return;
+  e.preventDefault();
+}));
+document.addEventListener('keydown',e=>{
+  if(!started||scored) return;
+  const k=e.key.toLowerCase(), m=e.ctrlKey||e.metaKey;
+  if(e.key==='F12'||e.key==='PrintScreen'||(m&&['c','v','x','u','s','p','a'].includes(k))||(m&&e.shiftKey&&['i','j','c'].includes(k))) e.preventDefault();
+});
+document.addEventListener('keyup',e=>{ if(started&&!scored&&e.key==='PrintScreen'){ try{navigator.clipboard.writeText('');}catch(_){} } });
+
+$('pNama').textContent='Ngaran Lengkep Siswa';
+$('pInfo').textContent='Kelas XII · Absén 00';
+$('pNilai').textContent='100';
+$('pTgl').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+setCert(false);
+renderMC(); renderMT();
+</script>
+
+<script>
+(function(){
+  const b=document.body;
+  const active=()=>typeof started!=='undefined'&&started&&!scored;
+  let shieldTimer=null;
+
+  function hide(reason){
+    if(!active()) return;
+    b.classList.add('shielded');
+    if(shieldTimer) clearTimeout(shieldTimer);
+    // Jangan langsung membuka layar kembali ketika event fokus berubah cepat.
+    shieldTimer=setTimeout(()=>{
+      if(active() && document.visibilityState==='visible' && document.hasFocus()){
+        b.classList.remove('shielded');
+      }
+    },450);
+  }
+
+  function show(){
+    if(!active()) return;
+    if(document.visibilityState==='visible' && document.hasFocus())
+      b.classList.remove('shielded');
+  }
+
+  // Jika tab/jendela kehilangan fokus, seluruh isi ujian segera ditutup secara visual.
+  window.addEventListener('blur',()=>hide('blur'),true);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden) hide('visibility');
+    else show();
+  },true);
+  window.addEventListener('pagehide',()=>hide('pagehide'),true);
+  window.addEventListener('pageshow',show,true);
+
+  // Coba cegah shortcut screenshot/print yang bisa dideteksi oleh browser.
+  // Catatan: browser tidak memberi HTML akses untuk memblokir screenshot OS secara mutlak.
+  function blockCaptureKey(e){
+    if(!active()) return;
+    const k=(e.key||'').toLowerCase();
+    const screenshotCombo =
+      e.key==='PrintScreen' ||
+      e.key==='Snapshot' ||
+      ((e.metaKey||e.ctrlKey)&&e.shiftKey&&['s','3','4','5'].includes(k)) ||
+      (e.ctrlKey&&k==='p');
+
+    if(screenshotCombo){
+      hide('capture-key');
+      e.preventDefault();
+      e.stopPropagation();
+      try{navigator.clipboard.writeText('Screenshot teu diidinan');}catch(_){}
+      setTimeout(()=>{ if(active()) show(); },1200);
+    }
+  }
+  document.addEventListener('keydown',blockCaptureKey,true);
+  document.addEventListener('keyup',blockCaptureKey,true);
+
+  // Matikan menu konteks, drag, seleksi, dan gesture tertentu selama ujian.
+  ['contextmenu','dragstart','selectstart'].forEach(ev=>{
+    document.addEventListener(ev,e=>{
+      if(active()) e.preventDefault();
+    },true);
+  });
+
+  // iPhone/Safari: cegah gesture zoom selama ujian.
+  document.addEventListener('gesturestart',e=>{if(active())e.preventDefault()},{passive:false});
+  document.addEventListener('gesturechange',e=>{if(active())e.preventDefault()},{passive:false});
+  document.addEventListener('gestureend',e=>{if(active())e.preventDefault()},{passive:false});
+  document.addEventListener('touchstart',e=>{if(active()&&e.touches.length>1)e.preventDefault()},{passive:false});
+
+  // Watermark dinamis: nama + nomor absen + waktu.
+  function wm(){
+    if(!active()) return;
+    const el=document.getElementById('wm'); if(!el) return;
+    const nama=(document.getElementById('nama')||{}).value||'SISWA';
+    const abs=(document.getElementById('absen')||{}).value||'';
+    const t=(nama+' '+abs+' · '+new Date().toLocaleString('id-ID')).toUpperCase();
+    el.innerHTML='';
+    const stepX=Math.max(280,Math.min(380,window.innerWidth/2.7));
+    const stepY=105;
+    for(let y=-60;y<window.innerHeight+180;y+=stepY){
+      for(let x=-120;x<window.innerWidth+220;x+=stepX){
+        const span=document.createElement('span');
+        span.textContent=t;
+        span.style.left=x+'px';
+        span.style.top=y+'px';
+        el.appendChild(span);
+      }
+    }
+  }
+  setInterval(wm,2500);
+  window.addEventListener('resize',wm);
+  new MutationObserver(()=>{if(active() && !document.getElementById('wm').children.length) wm();})
+    .observe(b,{attributes:true,attributeFilter:['class']});
+
+  // Jika DevTools terdeteksi secara kasar dari perbedaan ukuran viewport,
+  // sembunyikan materi. Ini bukan metode keamanan yang sempurna.
+  setInterval(()=>{
+    if(!active()) return;
+    const open=(window.outerWidth-window.innerWidth>200) ||
+               (window.outerHeight-window.innerHeight>260);
+    if(open) hide('devtools');
+    else show();
+  },700);
+
+  // Cegah keluar fullscreen tanpa tercatat oleh modul pelanggaran utama.
+  document.addEventListener('fullscreenchange',()=>{
+    if(active() && typeof fsOK!=='undefined' && fsOK && !document.fullscreenElement){
+      hide('fullscreen');
+    }
+  },true);
+})();
+</script>
+</body>
+</html>
